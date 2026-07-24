@@ -11,11 +11,24 @@ import newsletterRoutes  from "./routes/newsletter";
 const app = express();
 const PORT = process.env.PORT ?? 5000;
 
-app.use(cors({ origin: ["http://localhost:5173", "http://localhost:3000"], credentials: true }));
+const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173,http://localhost:3000")
+  .split(",")
+  .map(o => o.trim())
+  .filter(Boolean);
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/health", (_req, res) => res.json({ status: "ok", timestamp: new Date().toISOString() }));
+let dbReady = false;
+
+app.get("/health", (_req, res) =>
+  res.status(dbReady ? 200 : 503).json({
+    status: dbReady ? "ok" : "database unavailable",
+    db: dbReady ? "connected" : "disconnected",
+    timestamp: new Date().toISOString(),
+  })
+);
 
 app.use("/api/auth",         authRoutes);
 app.use("/api/products",     productRoutes);
@@ -30,6 +43,11 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ success: false, message: err.message ?? "Internal server error" });
 });
 
+// Start listening immediately so the platform sees a healthy port even if the
+// database is slow or unreachable — this surfaces a real error at /health
+// instead of a silent 503 from the app never binding.
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
 connectDB()
-  .then(() => app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`)))
-  .catch(err => { console.error("DB connection failed:", err); process.exit(1); });
+  .then(() => { dbReady = true; })
+  .catch(err => console.error("DB connection failed:", err));
