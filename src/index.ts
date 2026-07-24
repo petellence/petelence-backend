@@ -11,12 +11,14 @@ import newsletterRoutes  from "./routes/newsletter";
 const app = express();
 const PORT = process.env.PORT ?? 5000;
 
-const allowedOrigins = (process.env.CORS_ORIGIN ?? "http://localhost:5173,http://localhost:3000")
-  .split(",")
-  .map(o => o.trim())
-  .filter(Boolean);
+// CORS: if CORS_ORIGIN is set, allow only that comma-separated list; otherwise
+// allow every origin. `origin: true` reflects the request's Origin header, which
+// (unlike "*") stays compatible with credentials.
+const corsOrigin = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map(o => o.trim()).filter(Boolean)
+  : true;
 
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
