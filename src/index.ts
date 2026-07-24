@@ -7,6 +7,7 @@ import productRoutes    from "./routes/products";
 import uploadRoutes     from "./routes/upload";
 import testimonialRoutes from "./routes/testimonials";
 import newsletterRoutes  from "./routes/newsletter";
+import contactRoutes      from "./routes/contact";
 
 const app = express();
 const PORT = process.env.PORT ?? 5000;
@@ -37,6 +38,7 @@ app.use("/api/products",     productRoutes);
 app.use("/api/upload",       uploadRoutes);
 app.use("/api/testimonials", testimonialRoutes);
 app.use("/api/newsletter",   newsletterRoutes);
+app.use("/api/contact",      contactRoutes);
 
 app.use((_req, res) => res.status(404).json({ success: false, message: "Route not found" }));
 
