@@ -98,6 +98,21 @@ router.get("/", asyncHandler(async (req: Request, res: Response): Promise<void> 
   res.json({ success: true, count: products.length, data: products });
 }));
 
+// GET /api/products/categories — public, distinct categories with product counts
+router.get("/categories", asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+  const rows = await Product.aggregate<{ _id: string; count: number }>([
+    { $match: { status: "published" } },
+    { $group: { _id: "$category", count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ]);
+
+  const data = rows
+    .filter(r => r._id)
+    .map(r => ({ category: r._id, count: r.count }));
+
+  res.json({ success: true, count: data.length, data });
+}));
+
 // GET /api/products/:id — public
 router.get("/:id", asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const product = await Product.findOne({ id: req.params.id });
